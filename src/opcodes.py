@@ -191,5 +191,7 @@ zpy = {
     "stx":0x96
     }
 
+opcodes = [indx, indy, abso, absx, absy, acc, imm, imp, ind, rel, zp, zpx, zpy]
+
 
 

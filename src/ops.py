@@ -1,6 +1,6 @@
 import sys
 
-def checkThenOpen(sys.argv):
+def checkThenOpen(argv):
 
     if(len(sys.argv) > 2):
         print("Too many arguments")
@@ -12,7 +12,7 @@ def checkThenOpen(sys.argv):
         print("Must be a .s or .asm file")
         sys.exit(1)
 
-    open(inputFile, "r") as file
+    readFile = open(inputFile, "r")
 
-    return file
+    return readFile
 
