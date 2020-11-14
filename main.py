@@ -1,6 +1,6 @@
 '''65py2 - A 6502 Assembler'''
 
-from src.opcodes import *
+from src.opcodes import opcodes_list
 from src.ops import *
 from src.sreader import *
 
@@ -10,7 +10,9 @@ assignments = find_assignments(readFile)
 
 print(assignments)
 
-#functions = find_functions(readFile, assignments, opcodes)
+functions = function_reader(readFile, assignments, opcodes_list)
+
+print(functions)
 
 
 

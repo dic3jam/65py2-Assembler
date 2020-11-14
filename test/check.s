@@ -21,6 +21,8 @@ blah = 002
 
 function2:
 	jmp function1
-
-
+	jmp function2
+function3:
+	lda #54
+	sta $FF
 
