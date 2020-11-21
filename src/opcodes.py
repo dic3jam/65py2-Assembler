@@ -7,6 +7,8 @@ based upon addressing mode.
 Places those dictionaries into the list "opcodes"
 '''
 
+# Indirect X
+# V2
 indx = {
     "adc": 0x61,
     "and": 0x21,
@@ -18,6 +20,8 @@ indx = {
     "sta": 0x81
     }
 
+# Indirect Y
+# V2
 indy = {
     "adc": 0x71,
     "and": 0x31,
@@ -29,6 +33,8 @@ indy = {
     "sta": 0x91
     }
 
+# Absolute
+# V1
 abso = {
     "adc": 0x6d,
     "and": 0x2d,
@@ -55,6 +61,8 @@ abso = {
     "sty": 0x8c
     }
 
+# Absolute Indexed X
+# V2
 absx = {
     "adc": 0x7d,
     "and": 0x3d,
@@ -73,6 +81,8 @@ absx = {
     "sta": 0x9d
     }
 
+# Absolute Indexed Y
+# V2
 absy = {
     "adc": 0x79,
     "and": 0x39,
@@ -85,7 +95,9 @@ absy = {
     "sta": 0x99
     }
 
-
+# Accumulator
+# V1
+# will be no data
 acc = {
     "asl": 0x0a,
     "lsr": 0x4a,
@@ -93,6 +105,9 @@ acc = {
     "ror": 0x6a,
     }
 
+# Immediate
+# V1
+# will be prefixed with a #
 imm = {
     "adc": 0x69,
     "and": 0x29,
@@ -107,6 +122,9 @@ imm = {
     "sbc": 0xe9
     }
 
+# Implied
+# V1
+# unique
 imp = {
     "brk": 0x00,
     "clc": 0x18,
@@ -135,10 +153,16 @@ imp = {
     "tya": 0x98
     }
 
+# Indirect
+# V1
+# unique
 ind = {
     "jmp": 0x6C,
     }
 
+# Relative
+# V1
+# unique
 rel = {
     "bcc": 0x90,
     "bcs": 0xb0,
@@ -150,6 +174,8 @@ rel = {
     "bvc": 0x50
     }
 
+# Zero Page
+# V2
 zp = {
     "adc": 0x65,
     "and": 0x25,
@@ -174,6 +200,8 @@ zp = {
     "sty": 0x84
     }
 
+# Zero Page, X
+# V2
 zpx = {
     "adc": 0x75,
     "and": 0x35,
@@ -193,6 +221,8 @@ zpx = {
     "sty": 0x94
     }
 
+# Zero Page, Y
+# V2
 zpy = {
     "ldx": 0xb6,
     "stx": 0x96
