@@ -9,6 +9,11 @@ def main():
     assignments = find_assignments(readFile)
     functions = function_reader(readFile, assignments, opcodes_list)
     readFile.close()
+    print("Program counter: " + str(program_counter))
+    jmp_function(program_counter)
+ #   print("Assignments: " + str(assignments))
     swriter(functions)
+    print("After Functions: " + str(functions))
+
 
 main()

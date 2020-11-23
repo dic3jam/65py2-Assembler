@@ -1,29 +1,13 @@
-object1 = %11111111
-object2 = $FFFD
-object3 = 255
-THAT = $AD02
-willNotWork = $KL21
+variablea = $AFFA
+variableb = $AD21
+variablec = %00000011
 
- .org $8000
+main:
+	lda #$42
+	jsr test
+	jmp main
 
-function1:
-	lda #object1
-	sta $2000
-test6=$1234
-	lda #$FF
-	rol 
-	sec
-	adc 10
-	sta $2002
+test:
+	rts
 
-test5=123
-blah = 002
-
-function2:
-	jmp function1
-	jmp function2
-	
-function3:
-	lda #54
-	sta $FF
 

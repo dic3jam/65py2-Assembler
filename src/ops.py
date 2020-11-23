@@ -17,6 +17,11 @@ checkThenOpen:
 get_opcode_hex:
     gets the hexadecimal code
     for the inputted opcode
+
+swriter:
+    Writes the data structures out to
+    a .bin file that can be executed
+    on the target processor
 """
 
 

@@ -1,12 +1,13 @@
 import re
+from src.jmp_ins import jmp_ins
 from src.ops import *
 from src.opcodes import *
 
 # TODO
 '''
-will need a way to format addresses in little endian for full 16 bitaddresses - needed to provide program counter index for jmp
-finish jsr_function
 finish jmp_function
+
+finish addressing modes in command reader
 '''
 
 """
@@ -30,16 +31,9 @@ num_types:
     header as a variable. Returns the corresponding
     value as an integer.
 
-jsr_function: TODO
-    Scans through the program for jsr instructions
-    modifies the functions dict as well as the program
-    counter
-
 jmp_function: TODO
-    Processes a jump instruction by inserting
-    the corresponding program counter position
-    to the functions dict, and appends the
-    program counter
+    iterates through jmp_ins objects to assign them to the 
+    program
 
 function_reader:
     Iterates through the file and builds the functions
@@ -51,6 +45,11 @@ command_reader:
     sorts through the addressing modes and
     returns the correct hex for the opcode
 
+prune_functions:
+    iterates through the functions dict
+    splits values > 255 into little endian
+    format. Updates the program counter
+
 inc_counter:
     Adds the symbol (opcode, value, variable)
     to the program counter - builds an index
@@ -60,11 +59,11 @@ inc_counter:
 
 # Make some regular expressions for pattern matching
 # Determines if a line is attempting to assign a variable a value
-assignment = re.compile(r"(^[a-zA-Z0-9]+)\s?[=]\s?(\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|[0-2]\d{2})")
+assignment = re.compile(r"(^[a-zA-Z0-9]+)\s?[=]\s?(\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|\d+)")
 # The variable being assigned
 assign = re.compile(r"^[a-zA-Z0-9]+")
 # The value being assigned to the variable
-num = re.compile(r"\#?\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|[0-2]\d{2}")
+num = re.compile(r"\#?\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|\d+")
 # matches a binary number
 binary = re.compile(r"\%([0-1]{8})")
 # matches a hexadecimal value
@@ -91,6 +90,9 @@ program_counter = []
 # each function is stored with the key as the function header
 # and the opcodes and values stored as a list of values
 functions = {}
+# contains the jmp_ins objects capturing the details related to
+# jmp or jsr commands
+jmp_list = []
 
 
 def find_assignments(readFile):
@@ -137,69 +139,75 @@ def num_type(line):
     Returns
     ------------------
     the value of the number, variable
+    if the num is > 0xFFFF, then return 0xEA (nop)
+    if in error, return 0xEA
     '''
     # If it is a binary number, return it
     if re.search(binary, line):
         Bin = binary.findall(line)[0]
-        return int(Bin, 2)
+        if int(Bin, 2) < 0xFFFF:
+            return int(Bin, 2)
+        else:
+            return 0xEA
     # if it is a hexadecimal number, return it
     elif re.search(hexadecimal, line):
         Hex = hexadecimal.findall(line)[0]
-        return int(Hex, 16)
+        if int(Hex, 16) < 0xFFFF:
+            return int(Hex, 16)
+        else:
+            return 0xEA
     # if it is a decimal number, return it
     elif re.search(decimal, line):
         Dec = decimal.findall(line)[0]
-        return int(Dec)
+        if int(Dec) < 0xFFFF:
+            return int(Dec)
+        else:
+            return 0xEA
     # otherwise if it is a variable, search in that dictionary
     # and return the corresponding value
     else:
         try:
             assigning = action.findall(line)[0]
         except IndexError:
-            return -1
+            return 0xEA
         for x in assignments:
             if x == assigning:
                 return assignments[x]
+            # else it is a function header for a jmp or jsr ins
+            else:
+                return assigning
 
 
-def jmp_function(fnc_header):
+def jmp_function(program_counter):
     '''
-    Processes a jump instruction by inserting
-    the corresponding program counter position
-    to the functions dict, and appends the
-    program counter
+    Iterates through jmp_ins objects to assign them to the
+    program. If destination function does not exist, will
+    "jump" to the current position in the program
 
     Parameters:
     ----------------
-    fnc_header: string
-        the function header corresponding to the
-        jmp command
-    '''
-    # TODO
-    # if the num position is a function
-    # return the contents
-    # for y in functions:
-
-
-def jsr_function(fnc_header):
-    '''
-    Scans through the program for jsr instructions
-    modifies the functions dict as well as the program
-    counter
-
-    Parameters:
-    ----------------
-    fnc_header: string
-        the function header corresponding to the
-        jmp command
+    jmp_list: list
+        list containing all jmp_ins objects
 
     Modifies:
     ----------------
-    The functions dict to insert the subroutines
-    to the corresponding function
+    the functions dict and program counter to contain
+    the assembly files jmp or jsr instructions
     '''
-    # TODO
-    # will be 3rd scan through file
+    # if there were no jmp or jsr instructions, skip
+    if len(jmp_list) == 0:
+        return
+    # iterate through the jmp_ins objects
+    for jmp in jmp_list:
+        # determine the final destination in little endian
+        jmp.dest_pos(program_counter)
+        # insert the low byte after the opcode
+        functions[jmp.orig_name][jmp.pos_func + 1] = jmp.lo_byte
+        # insert the high byte after the low byte
+        functions[jmp.orig_name][jmp.pos_func + 2] = jmp.hi_byte
+        # dothe same for the program counter
+        program_counter[jmp.pos_counter + 1] = jmp.lo_byte
+        program_counter[jmp.pos_counter + 2] = jmp.hi_byte
 
 
 def function_reader(readFile, assignments, opcodes_list):
@@ -247,6 +255,15 @@ def function_reader(readFile, assignments, opcodes_list):
                 # and add to the bytearray
                 if re.search(action, line):
                     num = num_type(line)
+                    if line_command == 0x4c or line_command == 0x20:
+                        pos_counter = len(program_counter) - 1
+                        pos_func = len(func_bytelist) - 1
+                        jmp_list.append(jmp_ins(name, pos_counter,
+                                        pos_func, num))
+                        for x in range(2):
+                            func_bytelist.append(0x00)
+                            program_counter.append(0x00)
+                        continue
                     func_bytelist.append(num)
                     inc_counter(num)
                 # once through the whole file, assign the function name
@@ -268,6 +285,11 @@ def function_reader(readFile, assignments, opcodes_list):
                 '''
     # reset the file position
     readFile.seek(0)
+    print("Before Functions: " + str(functions))
+  #  print("Before program counter: " + str(program_counter))
+    prune_functions(functions)
+ #   print("After Functions: " + str(functions))
+#    print("After program counter: " + str(program_counter))
     return functions
 
 
@@ -303,11 +325,16 @@ def command_reader(line, opcodes_list):
     # get the command
     left = opcode.findall(line)[0]
     # get the action, if there is no action
-    # then it is accumulator addressing
+    # then it is accumulator or implied addressing
     try:
         action.findall(line)[0]
     except IndexError:
-        x = get_opcode_hex(left, acc)
+        for op in acc:
+            if op == left:
+                x = get_opcode_hex(left, acc)
+        else:
+            x = get_opcode_hex(left, imp)
+            return x
 
     # if the line contains a # it is immediate
     if(re.search(immediate, line)):
@@ -315,7 +342,7 @@ def command_reader(line, opcodes_list):
     else:
         # make a list of dictionaries with unique
         # opcodes and iterate through them
-        uniq_addressing = [ind, rel, imp]
+        uniq_addressing = [rel, imp]
         for dic in uniq_addressing:
             for op in dic:
                 if op == left:
@@ -330,9 +357,52 @@ def command_reader(line, opcodes_list):
                     x = abso[op]
                     break
             else:
-                x = -1
+                x = 0xEA
 
     return x
+
+
+def prune_functions(functions):
+    '''
+    iterates through the functions dict
+    splits values > 255 into little endian
+    format. Updates the program counter
+
+    Parameters:
+    --------------
+    functions: dict
+        the dict of functions and their
+        opcodes/values
+    '''
+    for func in functions:
+        for val in functions[func]:
+            if val > 255:
+                # get the low byte
+                low_byte = val & 0b11111111
+                # get the high byte
+                hi_byte = val >> 8
+
+                # update the functions array
+
+                # determine which index that value is in the
+                # functions dict
+                index = functions[func].index(val)
+                # assign the low byte to val position
+                functions[func][index] = low_byte
+                # insert the hi_byte after the low_byte
+                # shift the rest of the list down
+                functions[func].insert((index+1), hi_byte)
+
+                # update the program counter
+
+                # determine the index of the function
+                ind_func = program_counter.index(func)
+                # use that as a starting point to find the val index
+                pro_ind = program_counter.index(val, ind_func)
+                # at the former position of val, assign the low_byte
+                program_counter[pro_ind] = low_byte
+                # at the +1 position of low_byte, assign the hi_byte
+                program_counter.insert((pro_ind+1), hi_byte)
 
 
 def inc_counter(symbol):
