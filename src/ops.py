@@ -104,6 +104,6 @@ def swriter(functions):
         will be written in order to
         the .bin file
     '''
-    with open("a.bin", "wb") as out:
+    with open("a.out", "wb") as out:
         for func in functions:
             out.write(bytes(functions[func]))
