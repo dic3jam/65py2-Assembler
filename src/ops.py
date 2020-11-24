@@ -42,12 +42,12 @@ def checkThenOpen(argv):
         file to be processed
     '''
 
-    if(len(sys.argv) > 2):
+    if(len(argv) > 2):
         print("Too many arguments")
         sys.exit(1)
 
     try:
-        inputFile = sys.argv[1]
+        inputFile = argv[1]
     except IndexError:
         print("Must provide one assembly file to assemble")
         sys.exit(1)
