@@ -5,8 +5,6 @@ from src.opcodes import *
 
 # TODO
 '''
-finish jmp_function
-
 finish addressing modes in command reader
 '''
 
@@ -31,8 +29,8 @@ num_types:
     header as a variable. Returns the corresponding
     value as an integer.
 
-jmp_function: TODO
-    iterates through jmp_ins objects to assign them to the 
+jmp_function:
+    iterates through jmp_ins objects to assign them to the
     program
 
 function_reader:
@@ -59,17 +57,17 @@ inc_counter:
 
 # Make some regular expressions for pattern matching
 # Determines if a line is attempting to assign a variable a value
-assignment = re.compile(r"(^[a-zA-Z0-9]+)\s?[=]\s?(\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|\d+)")
+assignment = re.compile(r"(^[a-zA-Z0-9]+)\s?[=]\s?(\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|[^a-zA-Z]\d+)")
 # The variable being assigned
 assign = re.compile(r"^[a-zA-Z0-9]+")
 # The value being assigned to the variable
-num = re.compile(r"\#?\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|\d+")
+num = re.compile(r"\#?\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|[^a-zA-Z]\d+")
 # matches a binary number
 binary = re.compile(r"\%([0-1]{8})")
 # matches a hexadecimal value
 hexadecimal = re.compile(r"\$([a-fA-F0-9]{2,4})")
 # matches a decimal value
-decimal = re.compile(r"(\d+)")
+decimal = re.compile(r"[^a-zA-Z](\d+)")
 # determines if a line is a function header
 function_header = re.compile("(\w+)\:")
 # command = re.compile(r"\t(\w+)\s(\$[a-fA-F0-9]{2,4}|\%[0-2]{8}|[0-2]\d{2})")
@@ -117,14 +115,14 @@ def find_assignments(readFile):
             # get left name as string
             left = assign.findall(line)[0]
             # get right side
-            right = num_type(num.findall(line)[0])
+            right = num_type(num.findall(line)[0], assignments)
             # add assignment to data structure
             assignments[left] = right
     readFile.seek(0)
     return assignments
 
 
-def num_type(line):
+def num_type(line, assignments):
     '''
     Identifies a binary, hexadecimal,
     decimal number, a variable, or a function
@@ -165,20 +163,15 @@ def num_type(line):
             return 0xEA
     # otherwise if it is a variable, search in that dictionary
     # and return the corresponding value
+    var = action.findall(line)[0]
+    if var in assignments:
+        return assignments[var]
+    # else it is a function header for a jmp or jsr ins
     else:
-        try:
-            assigning = action.findall(line)[0]
-        except IndexError:
-            return 0xEA
-        for x in assignments:
-            if x == assigning:
-                return assignments[x]
-            # else it is a function header for a jmp or jsr ins
-            else:
-                return assigning
+        return var
 
 
-def jmp_function(program_counter):
+def jmp_function():
     '''
     Iterates through jmp_ins objects to assign them to the
     program. If destination function does not exist, will
@@ -254,7 +247,7 @@ def function_reader(readFile, assignments, opcodes_list):
                 # if there is number or assignment after the opcode, get that
                 # and add to the bytearray
                 if re.search(action, line):
-                    num = num_type(line)
+                    num = num_type(line, assignments)
                     if line_command == 0x4c or line_command == 0x20:
                         pos_counter = len(program_counter) - 1
                         pos_func = len(func_bytelist) - 1
@@ -285,11 +278,7 @@ def function_reader(readFile, assignments, opcodes_list):
                 '''
     # reset the file position
     readFile.seek(0)
-    print("Before Functions: " + str(functions))
-  #  print("Before program counter: " + str(program_counter))
-    prune_functions(functions)
- #   print("After Functions: " + str(functions))
-#    print("After program counter: " + str(program_counter))
+    prune_functions(functions, program_counter)
     return functions
 
 
@@ -319,7 +308,6 @@ def command_reader(line, opcodes_list):
     immediate
     absolute
     implied
-    indirect
     relative
     '''
     # get the command
@@ -329,40 +317,22 @@ def command_reader(line, opcodes_list):
     try:
         action.findall(line)[0]
     except IndexError:
-        for op in acc:
-            if op == left:
-                x = get_opcode_hex(left, acc)
-        else:
-            x = get_opcode_hex(left, imp)
-            return x
+        if left in acc:
+            return get_opcode_hex(left, acc)
+        elif left in imp:
+            return get_opcode_hex(left, imp)
 
     # if the line contains a # it is immediate
     if(re.search(immediate, line)):
-        x = get_opcode_hex(left, imm)
-    else:
-        # make a list of dictionaries with unique
-        # opcodes and iterate through them
-        uniq_addressing = [rel, imp]
-        for dic in uniq_addressing:
-            for op in dic:
-                if op == left:
-                    x = dic[op]
-                    break
-        # can only get away with this for now
-        # TODO continue to build in other
-        # addressing modes
-        else:
-            for op in abso:
-                if op == left:
-                    x = abso[op]
-                    break
-            else:
-                x = 0xEA
+        return get_opcode_hex(left, imm)
+    # check other addressing dicts
+    elif left in rel:
+        return get_opcode_hex(left, rel)
+    elif left in abso:
+        return get_opcode_hex(left, abso)
+    
 
-    return x
-
-
-def prune_functions(functions):
+def prune_functions(functions, program_counter):
     '''
     iterates through the functions dict
     splits values > 255 into little endian

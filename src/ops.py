@@ -74,7 +74,7 @@ def get_opcode_hex(opcode, add):
     opcode: str
         the opcode to search for
 
-    addressing: str
+    add: str
         the addressing type to index
         into
 
@@ -102,7 +102,7 @@ def swriter(functions):
     functions: dict
         the dictionary of functions
         will be written in order to
-        the .bin file
+        the binary file
     '''
     with open("a.out", "wb") as out:
         for func in functions:
