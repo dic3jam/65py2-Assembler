@@ -59,9 +59,9 @@ inc_counter:
 # Determines if a line is attempting to assign a variable a value
 assignment = re.compile(r"(^[a-zA-Z0-9]+)\s?[=]\s?(\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|[^a-zA-Z]\d+)")
 # The variable being assigned
-assign = re.compile(r"^[a-zA-Z0-9]+")
+assign = re.compile(r"\#?^[a-zA-Z0-9]+")
 # The value being assigned to the variable
-num = re.compile(r"\#?\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|[^a-zA-Z]\d+")
+num = re.compile(r"\#?\$[a-fA-F0-9]{2,4}|\#?\%[0-1]{8}|\#?[^a-zA-Z]\d+")
 # matches a binary number
 binary = re.compile(r"\%([0-1]{8})")
 # matches a hexadecimal value
@@ -74,7 +74,7 @@ function_header = re.compile("(\w+)\:")
 # Determines if a line is an opcode
 opcode = re.compile(r"\t(\w{3})")
 # identifies an action for an opcode
-action = re.compile(r"\t\w{3}\s(\#?\%?\$?\w+)")
+action = re.compile(r"\t\w{3}\s\#?(\%?\$?\w+)")
 # determines the use of immediate addressing
 immediate = re.compile(r"\#")
 

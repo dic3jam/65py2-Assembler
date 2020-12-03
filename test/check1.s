@@ -6,11 +6,10 @@ main:
 	lda #$42
 	sta variablea
 	rol
-	bcc
-	jsr test
-	jmp main
-
-test:
-	rts
+	lda #$43
+	sta variableb
+	lda variablec
+	ora %11111111
+	sta $8000
 
 
