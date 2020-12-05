@@ -11,7 +11,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["./test/check.s"]
+            "args": ["./test/add_check.s"]
         }
     ]
 }

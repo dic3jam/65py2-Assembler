@@ -55,7 +55,8 @@ inc_counter:
     assembly file
 """
 
-# Make some regular expressions for pattern matching
+# Regular expressions for pattern matching
+
 # Determines if a line is attempting to assign a variable a value
 assignment = re.compile(r"(^[a-zA-Z0-9]+)\s?[=]\s?(\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|[^a-zA-Z]\d+)")
 # The variable being assigned
@@ -91,6 +92,8 @@ functions = {}
 # contains the jmp_ins objects capturing the details related to
 # jmp or jsr commands
 jmp_list = []
+# contains the program counter positions of jumps
+jmp_pos = {}
 
 
 def find_assignments(readFile):
@@ -171,7 +174,7 @@ def num_type(line, assignments):
         return var
 
 
-def jmp_function():
+def jmp_function(splits):
     '''
     Iterates through jmp_ins objects to assign them to the
     program. If destination function does not exist, will
@@ -190,10 +193,13 @@ def jmp_function():
     # if there were no jmp or jsr instructions, skip
     if len(jmp_list) == 0:
         return
+    # call prune_prc from ops.py to get correct jump positions
+#    jmp_pos = prune_prc(program_counter)
     # iterate through the jmp_ins objects
     for jmp in jmp_list:
+        # jmp.inc_pos(splits)
         # determine the final destination in little endian
-        jmp.dest_pos(program_counter)
+        jmp.dest_pos()
         # insert the low byte after the opcode
         functions[jmp.orig_name][jmp.pos_func + 1] = jmp.lo_byte
         # insert the high byte after the low byte
@@ -203,7 +209,7 @@ def jmp_function():
         program_counter[jmp.pos_counter + 2] = jmp.hi_byte
 
 
-def function_reader(readFile, assignments, opcodes_list):
+def function_reader(readFile, assignments, opcodes_list, splits):
     '''
     Iterates through the file and builds the functions
     dictionary by assigning the function header as the key
@@ -226,6 +232,7 @@ def function_reader(readFile, assignments, opcodes_list):
     the functions dict complete with each function and
     its corresponding opcodes/values in a list
     '''
+    count = 0
     # iterate through the file
     for line in readFile:
         # create a list to capture the opcodes and values
@@ -236,6 +243,7 @@ def function_reader(readFile, assignments, opcodes_list):
             name = function_header.findall(line)[0]
             # add to the program counter
             inc_counter(name)
+            count += 1
             for line in readFile:
                 # so long as we do not encounter a blank line or another function
                 # if you find an opcode, get its correct hex code and
@@ -249,7 +257,7 @@ def function_reader(readFile, assignments, opcodes_list):
                 if re.search(action, line):
                     num = num_type(line, assignments)
                     if line_command == 0x4c or line_command == 0x20:
-                        pos_counter = len(program_counter) - 1
+                        pos_counter = len(program_counter) - count
                         pos_func = len(func_bytelist) - 1
                         jmp_list.append(jmp_ins(name, pos_counter,
                                         pos_func, num))
@@ -264,22 +272,10 @@ def function_reader(readFile, assignments, opcodes_list):
                 if re.match(r"\n", line):
                     functions[name] = func_bytelist
                     break
-                '''
-                TODO nested functions
-                if re.match(function_header, line):
-                    functions[name] = func_bytelist
-                    try:
-                        sub_name = function_header.findall(line)[0]
-                    except IndexError:
-                        pass # TODO think of something better
-                    sub_function = function_reader(readFile, assignments, opcodes_list)
-                    functions[sub_name].insert(sub_function[sub_name])
-                    break
-                '''
     # reset the file position
     readFile.seek(0)
-    prune_functions(functions, program_counter)
-    return functions
+    splits = prune_functions(functions, program_counter, splits)
+    return functions, splits
 
 
 def command_reader(line, opcodes_list):
@@ -332,12 +328,12 @@ def command_reader(line, opcodes_list):
         return get_opcode_hex(left, abso)
     
 
-def prune_functions(functions, program_counter):
+def prune_functions(functions, program_counter, splits):
     '''
     iterates through the functions dict
     splits values > 255 into little endian
     format. Updates the program counter
-
+        TODO
     Parameters:
     --------------
     functions: dict
@@ -347,6 +343,8 @@ def prune_functions(functions, program_counter):
     for func in functions:
         for val in functions[func]:
             if val > 255:
+                # increment the global variable splits
+                splits += 1
                 # get the low byte
                 low_byte = val & 0b11111111
                 # get the high byte
@@ -373,6 +371,7 @@ def prune_functions(functions, program_counter):
                 program_counter[pro_ind] = low_byte
                 # at the +1 position of low_byte, assign the hi_byte
                 program_counter.insert((pro_ind+1), hi_byte)
+    return splits
 
 
 def inc_counter(symbol):

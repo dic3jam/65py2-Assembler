@@ -33,10 +33,13 @@ class jmp_ins:
 
     Methods:
     -------------
-    dest_pos:
+    dest_pos: TODO
         receives the final program counter position and 
         assigns the lo_byte and hi_byte of that position to
         this
+
+    inc_pos:
+        TODO    
     '''
 
     def __init__(self, orig_name, pos_counter, pos_func, dest_name):
@@ -47,9 +50,10 @@ class jmp_ins:
         self.lo_byte = 0xEA
         self.hi_byte = 0xEA
 
-    def dest_pos(self, program_counter):
-        ind = program_counter.index(self.dest_name) - 1
-        if ind < 0:
-            ind = 0
-        self.lo_byte = ind & 0b11111111
-        self.hi_byte = ind >> 8
+    def dest_pos(self):
+        self.lo_byte = self.pos_counter & 0b11111111
+        self.hi_byte = self.pos_counter >> 8
+
+    def inc_pos(self, num):
+        self.pos_counter += num
+        self.pos_func += num

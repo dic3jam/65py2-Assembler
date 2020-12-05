@@ -8,7 +8,6 @@ main:
 	rol
 	lda #$43
 	sta variableb
-	lda variablec
 	ora %11111111
 	sta $8000
 

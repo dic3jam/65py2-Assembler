@@ -99,7 +99,7 @@ class test_prune_functions(unittest.TestCase):
     def test_prune_functions(self):
         functions = {"main": [0xAAAA, 0xFFFF, 0xBBBB]}
         program_counter = ["main", 0xAAAA, 0xFFFF, 0xBBBB]
-        prune_functions(functions, program_counter)
+        prune_functions(functions, program_counter, 0)
         self.assertEqual(functions["main"][1], 0xAA)
         self.assertEqual(functions["main"][5], 0xBB)
         self.assertEqual(program_counter[1], 0xAA)

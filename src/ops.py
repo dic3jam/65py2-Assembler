@@ -107,3 +107,14 @@ def swriter(functions):
     with open("a.out", "wb") as out:
         for func in functions:
             out.write(bytes(functions[func]))
+
+def prune_prc(program_counter):
+    i = 0
+    jmp_pos = {}
+    for x in program_counter:
+        if type(x) is str:
+            ind = program_counter.index(x)
+            ind -= i
+            jmp_pos[x] = ind
+            i += 1
+    return jmp_pos
