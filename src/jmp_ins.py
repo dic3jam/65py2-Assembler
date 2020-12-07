@@ -53,7 +53,3 @@ class jmp_ins:
     def dest_pos(self):
         self.lo_byte = self.pos_counter & 0b11111111
         self.hi_byte = self.pos_counter >> 8
-
-    def inc_pos(self, num):
-        self.pos_counter += num
-        self.pos_func += num
