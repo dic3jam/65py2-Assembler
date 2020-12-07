@@ -150,9 +150,9 @@ def sreader(readFile, assignments):
             name = function_header.findall(line)[0]
             # add to the program counter
             program_counter.append(name)
-            bytelist_add, program_counter, jmp_list = function_reader(readfile,
-                            assignments, program_counter, header_count, name))
-            func_bytelist.append(bytelist_add)
+            bytelist_add, program_counter, jmp_list = function_reader(readFile,
+                            assignments, program_counter, jmp_list, header_count, name)
+            func_bytelist.extend(bytelist_add)
             functions[name] = func_bytelist
         else:
             continue

@@ -101,10 +101,10 @@ def prune_functions(functions, program_counter):
                 low_byte = val & 0b11111111
                 # get the high byte
                 hi_byte = val >> 8
-                func = update_func(func,
-                                low_byte, hi_byte, val)
+                update_func(functions[func],
+                            low_byte, hi_byte, val)
                 program_counter = update_prc(program_counter, func,
-                                low_byte, hi_byte, val)
+                            low_byte, hi_byte, val)
 
     return functions, program_counter
 
