@@ -64,29 +64,29 @@ class test_prune_functions(unittest.TestCase):
         self.assertEqual(program_counter[3], 0xFF)
 
 
-class test_update_func(unittest.TestCase):
+class test_prune_func(unittest.TestCase):
 
-    def test_adds_jmp_func(self):
-        func = ["main", 0xea, 0xea, 0x4c]
-        lo = 0x42
-        hi = 0x42
-        val = 3
-        test_func = update_func(func, lo, hi, val)
-        self.assertEqual(test_func[4], 0x42)
-        self.assertEqual(test_func[5], 0x42)
+    def test_prune_func(self):
+        func = ["main", 0xea, 0xFFFF, 0x4c]
+        lo = 0xFF
+        hi = 0xFF
+        val = 0xFFFF
+        test_func = prune_func(func, lo, hi, val)
+        self.assertEqual(test_func[2], 0xFF)
+        self.assertEqual(test_func[3], 0xFF)
 
 
-class test_update_prc(unittest.TestCase):
+class test_prune_prc(unittest.TestCase):
 
-    def test_adds_jmp_prc(self):
-        func = {"main": [0xea, 0xea, 0x4c]}
-        prc = ["main", 0xea, 0xea, 0x4c]
-        lo = 0x42
-        hi = 0x42
-        val = 3
-        test_func = update_prc(prc, func, lo, hi, val)
-        self.assertEqual(test_func[4], 0x42)
-        self.ssertEqual(test_func[5], 0x42)
+    def test_prune_prc(self):
+        func = "main"
+        prc = ["main", 0xea, 0xFFFF, 0x4c]
+        lo = 0xFF
+        hi = 0xFF
+        val = 0xFFFF
+        test_func = prune_prc(prc, func, lo, hi, val)
+        self.assertEqual(test_func[2], 0xFF)
+        self.ssertEqual(test_func[3], 0xFF)
 
 
 class test_jmp_function(unittest.TestCase):
@@ -112,17 +112,40 @@ class test_jmp_function(unittest.TestCase):
             self.assertEqual(check_counter[x], program_counter[x])
 
 
-'''
 class test_app_functions(unittest.TestCase):
 
-    # TODO
+    def setUp(self):
+        self.tst_jmp = jmp_ins("main", 1, 2, "here")
+        self.tst_jmp.lo_byte = 0x42
+        self.tst_jmp.hi_byte = 0x43
+        self.func = {"main": [0x20, 0x00, 0x00], "here": [96]}
+
+    def test_app_functions(self):
+        tst_func = app_functions(self.func, self.tst_jmp)
+        self.assertEqual(tst_func["main"][1], 0x42)
+        self.assertEqual(tst_func["main"][2], 0x43)
 
 
 class test_app_prc(unittest.TestCase):
 
-    # TODO
-'''
+    def setUp(self):
+        self.tst_jmp = jmp_ins("main", 1, 2, "here")
+        self.tst_jmp.lo_byte = 0x42
+        self.tst_jmp.hi_byte = 0x43
+        self.prc = ["main", 0x20, 0x00, 0x00, "here", 96]
 
+    def test_app_functions(self):
+        tst_prc = app_prc(self.prc, self.tst_jmp)
+        self.assertEqual(tst_prc[1], 0x42)
+        self.assertEqual(tst_prc[2], 0x43)
+
+
+class test_find_func_pos(unittest.TestCase):
+
+    def test_find_func_pos(self):
+        tst_prc = ["main", 0xea, 0xea, "main2", "main3"]
+        ret_prc = find_func_pos(tst_prc)
+        self.assertEqual(ret_prc["main2"], 2)
 
 if __name__ == '__main__':
     unittest.main()

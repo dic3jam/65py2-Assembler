@@ -46,12 +46,11 @@ class test_function_reader(unittest.TestCase):
         self.assignments = find_assignments(self.readFile)
         self.program_counter = ["main", 0xad, 0x42, 0x6e, 0x4c, 0x00, 0x00]
         self.jmp_list = []
-        self.count = 1
         self.name = "main"
         self.test_prc = []
-        test_bytelist, self.test_prc, test_jmp_list, test_count = function_reader(
+        test_bytelist, self.test_prc, test_jmp_list = function_reader(
                 self.readFile, self.assignments, self.test_prc, self.jmp_list,
-                self.count, self.name)
+                self.name)
 
     # test for first if condition by looking at no action commands
     def test_no_action_commands(self):
@@ -70,21 +69,18 @@ class test_function_reader(unittest.TestCase):
 class test_add_jmp(unittest.TestCase):
 
     def setUp(self):
-        self.name = "function3"
+        self.name = "main"
         self.program_counter = ["main", 0xea, 0xea, 0x20, 0x00, 0x00, 0x4c]
         self.func_bytelist = {"main": [0xea, 0xea, 0x20, 0x00, 0x00, 0x4c]}
-        self.count = 1
         self.num = "function3"
 
     def test_add_jmp_ins(self):
-        right_program_counter = ["main", 0xea, 0xea, 0x20, 0x00, 0x00, 0x4c]
-        right_func_bytelist = {"main": [0xea, 0xea, 0x20, 0x00, 0x00, 0x4c]}
-        test_jmp, test_func_bytelist, test_prc = add_jmp(
-                self.name, self.program_counter, self.func_bytelist, self.count,
-                self.num)
-        self.assertEqual(right_func_bytelist, test_func_bytelist)
-        self.assertEqual(right_program_counter, test_prc)
-
+        tst_jmp, tst_bytelist, tst_prc = add_jmp(self.name, self.program_counter,
+                            self.func_bytelist, self.num)
+        self.assertEqual(tst_jmp.lo_pos_func, 7)
+        self.assertEqual(tst_jmp.lo_pos_func, 8)
+        self.assertEqual(tst_bytelist[7], 0x00)
+        self.assertEqual(tst_prc[8], 0x00)
 
 class test_num_types(unittest.TestCase):
 
