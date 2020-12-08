@@ -42,14 +42,14 @@ class jmp_ins:
         TODO    
     '''
 
-    def __init__(self, orig_name, pos_counter, pos_func, dest_name):
+    def __init__(self, orig_name, lo_pos_func, hi_pos_func, dest_name):
         self.orig_name = orig_name
-        self.pos_counter = pos_counter
-        self.pos_func = pos_func
+        self.lo_pos_func = lo_pos_func
+        self.hi_pos_func = hi_pos_func
         self.dest_name = dest_name
         self.lo_byte = 0xEA
         self.hi_byte = 0xEA
 
-    def dest_pos(self):
-        self.lo_byte = self.pos_counter & 0b11111111
-        self.hi_byte = self.pos_counter >> 8
+    def dest_pos(self, jmp_pos):
+        self.lo_byte = jmp_pos & 0b11111111
+        self.hi_byte = jmp_pos >> 8

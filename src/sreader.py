@@ -137,33 +137,30 @@ def sreader(readFile, assignments):
     functions = {}
     program_counter = []
     jmp_list = []
-    header_count = 0
     # iterate through the file
     for line in readFile:
         # if the line is a function header
         if re.match(function_header, line):
-            # increment the counter
-            header_count += 1
             # create a list to capture the opcodes and values
             func_bytelist = []
             # get its name
             name = function_header.findall(line)[0]
             # add to the program counter
             program_counter.append(name)
-            bytelist_add, program_counter, jmp_list = function_reader(readFile,
-                            assignments, program_counter, jmp_list, header_count, name)
+            bytelist_add, program_counter, jmp_list = function_reader(
+                    readFile, assignments, program_counter, jmp_list,
+                    name)
             func_bytelist.extend(bytelist_add)
             functions[name] = func_bytelist
         else:
             continue
     # reset the file position
     readFile.seek(0)
-    functions, program_counter = prune_functions(functions, program_counter)
 
     return functions, program_counter, jmp_list
 
 
-def function_reader(readFile, assignments, program_counter, jmp_list, count, name):
+def function_reader(readFile, assignments, program_counter, jmp_list, name):
     func_bytelist = []
     for line in readFile:
         if re.search(opcode, line):
@@ -177,7 +174,7 @@ def function_reader(readFile, assignments, program_counter, jmp_list, count, nam
             # if the command is a jmp or jsr command
             if line_command == 0x4c or line_command == 0x20:
                 new_jmp, func_bytelist, program_counter = add_jmp(
-                       name, program_counter, func_bytelist, count, num)
+                    name, program_counter, func_bytelist, num)
                 jmp_list.append(new_jmp)
             else:
                 func_bytelist.append(num)
@@ -185,16 +182,17 @@ def function_reader(readFile, assignments, program_counter, jmp_list, count, nam
 
         # once through the whole file, assign the function name
         # and the bytearray to the dictionary
+
         if re.match(r"\n", line):
             return func_bytelist, program_counter, jmp_list
         else:
             continue
 
 
-def add_jmp(name, program_counter, func_bytelist, count, num):
-    pos_counter = len(program_counter) - count
-    pos_func = len(func_bytelist) - 1
-    new_jmp = jmp_ins(name, pos_counter, pos_func, num)
+def add_jmp(name, program_counter, func_bytelist, num):
+    lo_pos_func = len(func_bytelist) + 1
+    hi_pos_func = lo_pos_func + 1
+    new_jmp = jmp_ins(name, lo_pos_func, hi_pos_func, num)
     for x in range(2):
         func_bytelist.append(0x00)
         program_counter.append(0x00)

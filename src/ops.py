@@ -1,5 +1,7 @@
 import sys
+import re
 from src.opcodes import *
+from src.sreader import function_header
 
 """
 65py2 Ops
@@ -101,15 +103,15 @@ def prune_functions(functions, program_counter):
                 low_byte = val & 0b11111111
                 # get the high byte
                 hi_byte = val >> 8
-                update_func(functions[func],
+                prune_func(functions[func],
                             low_byte, hi_byte, val)
-                program_counter = update_prc(program_counter, func,
+                program_counter = prune_prc(program_counter, func,
                             low_byte, hi_byte, val)
 
     return functions, program_counter
 
 
-def update_func(func, low_byte, hi_byte, val):
+def prune_func(func, low_byte, hi_byte, val):
     # determine which index that value is in the
     # functions dict
     index = func.index(val)
@@ -122,7 +124,7 @@ def update_func(func, low_byte, hi_byte, val):
     return func
 
 
-def update_prc(program_counter, func, low_byte, hi_byte, val):
+def prune_prc(program_counter, func, low_byte, hi_byte, val):
     # determine the index of the function
     ind_func = program_counter.index(func)
     # use that as a starting point to find the val index
@@ -158,29 +160,43 @@ def jmp_function(functions, program_counter, jmp_list):
 #    jmp_pos = prune_prc(program_counter)
     # iterate through the jmp_ins objects
     for jmp in jmp_list:
+        func_pos = find_func_pos(program_counter)
         # determine the final destination in little endian
-        jmp.dest_pos()
+        jmp.dest_pos(func_pos[jmp.dest_name])
         # append the lo and hi bytes
+        # functions = app_functions(functions, jmp)
         functions = app_functions(functions, jmp)
         # do the same for the program counter
-        program_counter = app_pc(program_counter, jmp)
+        # program_counter = app_prc(program_counter, jmp)
+        program_counter = app_prc(program_counter, jmp)
 
     return functions, program_counter
 
 
 def app_functions(functions, jmp):
     # insert the low byte after the opcode
-    functions[jmp.orig_name][jmp.pos_func + 1] = jmp.lo_byte
+    functions[jmp.orig_name][jmp.lo_pos_func] = jmp.lo_byte
     # insert the high byte after the low byte
-    functions[jmp.orig_name][jmp.pos_func + 2] = jmp.hi_byte
+    functions[jmp.orig_name][jmp.hi_pos_func] = jmp.hi_byte
 
     return functions
 
 
-def app_pc(program_counter, jmp):
+def app_prc(program_counter, jmp):
     # insert the lo byte
-    program_counter[jmp.pos_counter + 1] = jmp.lo_byte
+    program_counter[jmp.lo_pos_func + 1] = jmp.lo_byte
     # insert the hi byte
-    program_counter[jmp.pos_counter + 2] = jmp.hi_byte
+    program_counter[jmp.hi_pos_func + 1] = jmp.hi_byte
 
     return program_counter
+
+
+def find_func_pos(program_counter):
+    func_pos = {}
+    count = 0
+    for x in program_counter:
+        if isinstance(x, str):
+           func_pos[x] = program_counter.index(x) - count
+           count += 1
+    
+    return func_pos
