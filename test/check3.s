@@ -14,8 +14,6 @@ RH = %00000010
 
 
 main:
-	ldx #$ff 
-	txs
 	lda #%11111111 
 	sta DDRB
 	lda #%11100000
@@ -49,7 +47,6 @@ lcd_wait:
 	sta PORTA
 	lda #%11111111 
 	sta DDRB	
-	pla 
 	rts	
 
 lcd_instruction:
@@ -59,8 +56,8 @@ lcd_instruction:
 	sta PORTA
 	lda #E
 	sta PORTA
-	lda #0 
+	lda #0
 	sta PORTA
 	rts
 
-
+	

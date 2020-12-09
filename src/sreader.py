@@ -59,24 +59,24 @@ inc_counter:
 # Regular expressions for pattern matching
 
 # Determines if a line is attempting to assign a variable a value
-assignment = re.compile(r"(^[a-zA-Z0-9]+)\s?[=]\s?(\$[a-fA-F0-9]{2,4}|\%[0-1]{8}|[^a-zA-Z]\d+)")
+assignment = re.compile(r"(^[a-zA-Z0-9]+)\s?[=]\s?(\$[a-fA-F0-9]+|\%[0-1]+|\d+$)")
 # The variable being assigned
 assign = re.compile(r"\#?^[a-zA-Z0-9]+")
 # The value being assigned to the variable
-num = re.compile(r"\#?\$[a-fA-F0-9]{2,4}|\#?\%[0-1]{8}|\#?[^a-zA-Z]\d+")
+num = re.compile(r"\#?\$[a-fA-F0-9]+|\#?\%[0-1]+|\#?\d+$")
 # matches a binary number
-binary = re.compile(r"\%([0-1]{8})")
+binary = re.compile(r"\%([0-1]+)")
 # matches a hexadecimal value
-hexadecimal = re.compile(r"\$([a-fA-F0-9]{2,4})")
+hexadecimal = re.compile(r"\$([a-fA-F0-9]+)")
 # matches a decimal value
-decimal = re.compile(r"[^a-zA-Z](\d+)")
+decimal = re.compile(r"\s?(\d+)$")
 # determines if a line is a function header
-function_header = re.compile("(\w+)\:")
+function_header = re.compile(r"(\w+)\:")
 # command = re.compile(r"\t(\w+)\s(\$[a-fA-F0-9]{2,4}|\%[0-2]{8}|[0-2]\d{2})")
 # Determines if a line is an opcode
 opcode = re.compile(r"\t(\w{3})")
 # identifies an action for an opcode
-action = re.compile(r"\t\w{3}\s\#?(\%?\$?\w+)")
+action = re.compile(r"\t\w{3}\s\#?\$?\%?(\w+)")
 # determines the use of immediate addressing
 immediate = re.compile(r"\#")
 
@@ -162,6 +162,7 @@ def sreader(readFile, assignments):
 
 def function_reader(readFile, assignments, program_counter, jmp_list, name):
     func_bytelist = []
+    prune_count = 0
     for line in readFile:
         if re.search(opcode, line):
             line_command = command_reader(line)
@@ -171,10 +172,12 @@ def function_reader(readFile, assignments, program_counter, jmp_list, name):
         # and add to the bytearray
         if re.search(action, line):
             num = num_type(line, assignments)
+            if isinstance(num, int) and num > 255:
+                prune_count += 1
             # if the command is a jmp or jsr command
             if line_command == 0x4c or line_command == 0x20:
                 new_jmp, func_bytelist, program_counter = add_jmp(
-                    name, program_counter, func_bytelist, num)
+                    name, program_counter, func_bytelist, num, prune_count)
                 jmp_list.append(new_jmp)
             else:
                 func_bytelist.append(num)
@@ -189,9 +192,9 @@ def function_reader(readFile, assignments, program_counter, jmp_list, name):
             continue
 
 
-def add_jmp(name, program_counter, func_bytelist, num):
-    lo_pos_func = len(func_bytelist) + 1
-    hi_pos_func = lo_pos_func + 1
+def add_jmp(name, program_counter, func_bytelist, num, prune_count):
+    lo_pos_func = len(func_bytelist) + prune_count
+    hi_pos_func = lo_pos_func + 1 
     new_jmp = jmp_ins(name, lo_pos_func, hi_pos_func, num)
     for x in range(2):
         func_bytelist.append(0x00)

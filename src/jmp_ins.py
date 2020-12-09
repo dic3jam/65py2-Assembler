@@ -34,12 +34,12 @@ class jmp_ins:
     Methods:
     -------------
     dest_pos: TODO
-        receives the final program counter position and 
+        receives the final program counter position and
         assigns the lo_byte and hi_byte of that position to
         this
 
     inc_pos:
-        TODO    
+        TODO
     '''
 
     def __init__(self, orig_name, lo_pos_func, hi_pos_func, dest_name):
@@ -53,3 +53,5 @@ class jmp_ins:
     def dest_pos(self, jmp_pos):
         self.lo_byte = jmp_pos & 0b11111111
         self.hi_byte = jmp_pos >> 8
+
+   

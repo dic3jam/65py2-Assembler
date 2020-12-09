@@ -8,7 +8,10 @@ def main():
     assignments = find_assignments(readFile)
     functions, program_counter, jmp_list = sreader(readFile, assignments)
     functions, program_counter = prune_functions(functions, program_counter)
-    functions, program_counter = jmp_function(functions, program_counter, jmp_list)
+    try:
+        functions, program_counter = jmp_function(functions, program_counter, jmp_list)
+    except TypeError:
+        pass
     readFile.close()
     swriter(functions)
 

@@ -11,7 +11,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args": ["./test/check_jmp.s"]
+            "args": ["./test/check3.s"]
         }
     ]
 }

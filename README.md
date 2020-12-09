@@ -21,6 +21,7 @@ commands are 1 tab from left
 must have at least 1 function - the assembler reads in from function headers
 less likely for error if all variable assignments at start
 must have a .s or .asm extension
+variable names cannot contain numbers
 
 Recommended assembly file structure:
 

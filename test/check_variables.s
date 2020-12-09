@@ -1,4 +1,4 @@
-variable1 = 5
+variablea = 5
 VARIABLEA = 2
 TEs12 = $
 tes13 = %

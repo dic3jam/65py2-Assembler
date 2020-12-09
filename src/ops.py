@@ -160,14 +160,13 @@ def jmp_function(functions, program_counter, jmp_list):
 #    jmp_pos = prune_prc(program_counter)
     # iterate through the jmp_ins objects
     for jmp in jmp_list:
+        # get the current position of each function header in the program
         func_pos = find_func_pos(program_counter)
         # determine the final destination in little endian
         jmp.dest_pos(func_pos[jmp.dest_name])
         # append the lo and hi bytes
-        # functions = app_functions(functions, jmp)
         functions = app_functions(functions, jmp)
         # do the same for the program counter
-        # program_counter = app_prc(program_counter, jmp)
         program_counter = app_prc(program_counter, jmp)
 
     return functions, program_counter

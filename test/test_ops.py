@@ -4,6 +4,8 @@ from src.jmp_ins import *
 from src.ops import *
 from src.opcodes import *
 
+import pdb
+
 
 class test_checkThenOpen(unittest.TestCase):
 
@@ -86,7 +88,7 @@ class test_prune_prc(unittest.TestCase):
         val = 0xFFFF
         test_func = prune_prc(prc, func, lo, hi, val)
         self.assertEqual(test_func[2], 0xFF)
-        self.ssertEqual(test_func[3], 0xFF)
+        self.assertEqual(test_func[3], 0xFF)
 
 
 class test_jmp_function(unittest.TestCase):
@@ -97,9 +99,9 @@ class test_jmp_function(unittest.TestCase):
         self.program_counter = ["main", 0xad, 0x42, 0x8d, 0xdd, 0x4c, 0x00, 0x00, 0x4c, 0x00, 0x00,
                         "jmp_here", 0x4c, 0x00, 0x00]
         self.jmp_list = []
-        self.jmp_list.append(jmp_ins("main", 5, 4, "jmp_here"))
-        self.jmp_list.append(jmp_ins("main", 8, 7, "jmp_here"))
-        self.jmp_list.append(jmp_ins("jmp_here", 12, 11, "jmp_here"))
+        self.jmp_list.append(jmp_ins("main", 5, 6, "jmp_here"))
+        self.jmp_list.append(jmp_ins("main", 8, 9, "jmp_here"))
+        self.jmp_list.append(jmp_ins("jmp_here", 1, 2, "jmp_here"))
 
     def test_jmp(self):
         test_functions = {}
@@ -107,10 +109,8 @@ class test_jmp_function(unittest.TestCase):
         test_functions, test_prc = jmp_function(self.functions, self.program_counter,
                 self.jmp_list)
         check_counter = ["main", 0xad, 0x42, 0x8d, 0xdd, 0x4c, 0x0A, 0x00, 0x4c, 0x0A, 0x00,
-                            "jmp_here", 0x4c, 0x0A, 0x00]
-        for x in range(len(program_counter)):
-            self.assertEqual(check_counter[x], program_counter[x])
-
+                    "jmp_here", 0x4c, 0x0A, 0x00]
+        self.assertEqual(check_counter[6], self.program_counter[6])
 
 class test_app_functions(unittest.TestCase):
 
@@ -136,8 +136,8 @@ class test_app_prc(unittest.TestCase):
 
     def test_app_functions(self):
         tst_prc = app_prc(self.prc, self.tst_jmp)
-        self.assertEqual(tst_prc[1], 0x42)
-        self.assertEqual(tst_prc[2], 0x43)
+        self.assertEqual(tst_prc[2], 0x42)
+        self.assertEqual(tst_prc[3], 0x43)
 
 
 class test_find_func_pos(unittest.TestCase):

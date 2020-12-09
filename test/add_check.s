@@ -1,5 +1,5 @@
-variable1 = %11111111
-variable2 = $42
+variablea = %11111111
+variableb = $42
 
 
 main:
@@ -13,7 +13,7 @@ thatThing:
 	nop
 	nop
 	lda #$42
-	ora variable1
+	ora variablea
 	sta $8002
 	rts
 
