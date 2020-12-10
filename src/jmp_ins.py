@@ -14,11 +14,12 @@ class jmp_ins:
     orig_name: str
         the name of the function that called a jmp or
         jsr instruction
-    pos_counter: integer
-        the position as dicated by the program counter for
-        the jmp or jsr instruction to start from
-    pos_func: integer
-        the position in the orig_name functions list
+    lo_pos_func: integer
+        the position the low byte will sit after the call
+        to dest_pos
+    hi_pos_func: integer
+        the position the high byte will sit after the call
+        to dest_pos
     dest_name: str
         the function header that was called for for the jmp
         or jsr instruction
@@ -33,13 +34,17 @@ class jmp_ins:
 
     Methods:
     -------------
-    dest_pos: TODO
+    dest_pos: 
         receives the final program counter position and
         assigns the lo_byte and hi_byte of that position to
         this
+        
+        Parameters:
+        --------------
+        jmp_pos: int
+            the position of the jmp destination function
+            as determined by sreader.find_func_pos
 
-    inc_pos:
-        TODO
     '''
 
     def __init__(self, orig_name, lo_pos_func, hi_pos_func, dest_name):

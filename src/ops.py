@@ -16,14 +16,42 @@ checkThenOpen:
     Ensures that only one file with an extension of
     .asm or .s has been passed to the program
 
-get_opcode_hex:
-    gets the hexadecimal code
-    for the inputted opcode
-
 swriter:
     Writes the data structures out to
     a .bin file that can be executed
     on the target processor
+
+prune_functions:
+    iterates through the functions dict
+    splits values > 255 into little endian
+    format. Updates the program counter
+
+prune_func:
+    Helper function to prune_functions. Inserts
+    the hi_byte and low_byte to their positions
+    in the functions dict.
+
+prune_prc:
+    Helper function to prune_functions. Inserts
+    the hi_byte and low_byte to their positions
+    in the program_counter
+
+jmp_function:
+    Iterates through jmp_ins objects to assign them to the
+    program. If destination function does not exist, will
+    "jump" to the current position in the program
+
+app_functions:
+    inserts the lo and hi bytes to the functions dict
+
+app_prc:
+    inserts the lo and hi bytes to the program_counter
+
+find_func_pos:
+    identifies where all function headers begin in
+    the program - this solves the issue of how to exclude
+    the position of the function header being physically in
+    the program_counter list
 """
 
 
@@ -89,12 +117,20 @@ def prune_functions(functions, program_counter):
     iterates through the functions dict
     splits values > 255 into little endian
     format. Updates the program counter
-        TODO
+
     Parameters:
     --------------
     functions: dict
         the dict of functions and their
         opcodes/values
+    program_counter: list
+        the list of functions and their
+        opcodes/values
+
+    Returns:
+    -------------
+    functions, program_counter after formatting
+    for little endian
     '''
     for func in functions:
         for val in functions[func]:
@@ -112,6 +148,29 @@ def prune_functions(functions, program_counter):
 
 
 def prune_func(func, low_byte, hi_byte, val):
+    '''
+    Helper function to prune_functions. Inserts
+    the hi_byte and low_byte to their positions
+    in the functions dict.
+
+    Parameters:
+    --------------
+    func: list
+        the list of the current function that needs
+        a lower-endian format
+    low_byte: int
+        the lower byte of val
+    hi_byte: int
+        the high byte of val
+    val:
+        the value in question that we
+        are splitting
+
+    Returns:
+    -------------
+    func with the lower-endian format complete
+
+    '''
     # determine which index that value is in the
     # functions dict
     index = func.index(val)
@@ -125,6 +184,29 @@ def prune_func(func, low_byte, hi_byte, val):
 
 
 def prune_prc(program_counter, func, low_byte, hi_byte, val):
+    '''
+    Helper function to prune_functions. Inserts
+    the hi_byte and low_byte to their positions
+    in the program_counter
+
+    Parameters:
+    --------------
+    program_counter: list
+        the list of the current program that needs
+        a lower-endian format
+    low_byte: int
+        the lower byte of val
+    hi_byte: int
+        the high byte of val
+    val:
+        the value in question that we
+        are splitting
+
+    Returns:
+    -------------
+    program_counter with the lower-endian format complete
+
+    '''
     # determine the index of the function
     ind_func = program_counter.index(func)
     # use that as a starting point to find the val index
@@ -147,17 +229,19 @@ def jmp_function(functions, program_counter, jmp_list):
     ----------------
     jmp_list: list
         list containing all jmp_ins objects
+    functions: dict
+        list of the opcodes/values in functions
+    program_counter: list
+        list of the opcodes/values in the program
 
-    Modifies:
+    Returns:
     ----------------
-    the functions dict and program counter to contain
-    the assembly files jmp or jsr instructions
+    functions, program_counter after inserting the program_counter
+    addresses of the jumps
     '''
     # if there were no jmp or jsr instructions, skip
     if len(jmp_list) == 0:
         return
-    # call prune_prc from ops.py to get correct jump positions
-#    jmp_pos = prune_prc(program_counter)
     # iterate through the jmp_ins objects
     for jmp in jmp_list:
         # get the current position of each function header in the program
@@ -173,6 +257,20 @@ def jmp_function(functions, program_counter, jmp_list):
 
 
 def app_functions(functions, jmp):
+    '''
+    inserts the lo and hi bytes to the functions dict
+
+    Parameters:
+    -------------
+    functions: dict
+
+    jmp: jmp_ins
+        the particular jmp_ins we are inserting
+
+    Returns:
+    ------------
+    functions after appending the jmp_ins
+    '''
     # insert the low byte after the opcode
     functions[jmp.orig_name][jmp.lo_pos_func] = jmp.lo_byte
     # insert the high byte after the low byte
@@ -182,6 +280,21 @@ def app_functions(functions, jmp):
 
 
 def app_prc(program_counter, jmp):
+    '''
+    inserts the lo and hi bytes to the program_counter
+
+    Parameters:
+    -------------
+    program_counter: list
+
+    jmp: jmp_ins
+        the particular jmp_ins we are inserting
+
+    Returns:
+    ------------
+    program_counter after appending the jmp_ins
+    '''
+
     # insert the lo byte
     program_counter[jmp.lo_pos_func + 1] = jmp.lo_byte
     # insert the hi byte
@@ -191,11 +304,24 @@ def app_prc(program_counter, jmp):
 
 
 def find_func_pos(program_counter):
+    '''
+    identifies where all function headers begin in
+    the program - this solves the issue of how to exclude
+    the position of the function header being physically in
+    the program_counter list
+
+    Parameters:
+    -------------
+    program_counter: list
+
+    Returns:
+    func_pos a dict of function_header: staring position
+    '''
     func_pos = {}
     count = 0
     for x in program_counter:
         if isinstance(x, str):
-           func_pos[x] = program_counter.index(x) - count
-           count += 1
-    
+            func_pos[x] = program_counter.index(x) - count
+            count += 1
+
     return func_pos

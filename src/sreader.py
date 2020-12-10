@@ -24,36 +24,50 @@ find_assignments:
     creates a dictionary of the variables
     and their assignments
 
+sreader:
+    Iterates through the file and builds the functions
+    dictionary by assigning the function header as the key
+    and a list of the values and opcodes as the value
+    This is the main driver for the assembler
+
+function_reader:
+    Once sreader identifies a function, function_reader continues to iterate
+    through the file reading that function into the functions dict and the
+    program_counter. While iterating, performs operations to record the position
+    and intention of jmp and jsr instructions by instantiating jmp_ins objects
+    and appending them to the jmp_list
+
+add_jmp:
+    Helper function to function_reader. Processes jmp/jsr by creating
+    a new jmp_ins object, and assigning placeholders to the func_bytelist
+    and program_counter to be processed later
+
 num_types:
     Identifies a binary, hexadecimal,
     decimal number, a variable, or a function
     header as a variable. Returns the corresponding
     value as an integer.
 
-jmp_function:
-    iterates through jmp_ins objects to assign them to the
-    program
+bin_return:
+    If there is a binary numberin the line,
+    returns it
 
-function_reader:
-    Iterates through the file and builds the functions
-    dictionary by assigning the function header as the key
-    and a list of the values and opcodes as the value
+hex_return:
+    If there is a hexadecimal number in the line,
+    returns it
+
+dec_return:
+    If there is a decimal number in the line,
+    returns it
 
 command_reader:
     Identifies the opcode used in a line,
     sorts through the addressing modes and
     returns the correct hex for the opcode
 
-prune_functions:
-    iterates through the functions dict
-    splits values > 255 into little endian
-    format. Updates the program counter
-
-inc_counter:
-    Adds the symbol (opcode, value, variable)
-    to the program counter - builds an index
-    of the position of items in the
-    assembly file
+get_opcode_hex:
+    gets the hexadecimal code
+    for the inputted opcode
 """
 
 # Regular expressions for pattern matching
@@ -114,8 +128,9 @@ def find_assignments(readFile):
 def sreader(readFile, assignments):
     '''
     Iterates through the file and builds the functions
-    dictionary by assigning the function header as the key
-    and a list of the values and opcodes as the value
+    dict and program_counter by assigning the function header
+    as the key and a list of the values and opcodes as the value
+    This is the main driver for the assembler
 
     Parameters:
     ----------------
@@ -125,9 +140,6 @@ def sreader(readFile, assignments):
     assignments: dictionary
         dictionary with the variables and
         values
-
-    opcodes_list: list
-        list containing the dictionaries of opcodes
 
     Returns
     -----------------
@@ -161,6 +173,41 @@ def sreader(readFile, assignments):
 
 
 def function_reader(readFile, assignments, program_counter, jmp_list, name):
+    '''
+    Once sreader identifies a function, function_reader continues to iterate
+    through the file reading that function into the functions dict and the
+    program_counter. While iterating, performs operations to record the position
+    and intention of jmp and jsr instructions by instantiating jmp_ins objects
+    and appending them to the jmp_list
+
+    Paramters:
+    ---------------
+    readFile: file
+        the file we are assembling
+
+    assignments: dict
+        the variables and values
+
+    program_counter: list
+        the list of each opcode/value/function header
+        in the program
+
+    jmp_list: list
+        a list to hold jmp_ins objects for later processing
+
+    name:
+        the name of the function
+
+    Returns:
+    --------------
+    func_bytelist: list
+        the list of opcodes/values found under this function
+
+    program_counter: list
+
+    jmp_list: list
+        updated to reflect jmp/jsr present in this function
+    '''
     func_bytelist = []
     prune_count = 0
     for line in readFile:
@@ -193,8 +240,39 @@ def function_reader(readFile, assignments, program_counter, jmp_list, name):
 
 
 def add_jmp(name, program_counter, func_bytelist, num, prune_count):
+    '''
+    Helper function to function_reader. Processes jmp/jsr by creating
+    a new jmp_ins object, and assigning placeholders to the func_bytelist
+    and program_counter to be processed later
+
+    Parameters:
+    ---------------
+    name: string
+        name of the calling function
+
+    program_counter: list
+
+    func_bytelist: list
+
+    num: string
+        if this function is being called, num_types has
+        returned a string of the destination position
+        and it is added to the jmp_ins object here
+
+    prune_count: int
+        the number of values over 255 that have so far been encountered.
+        this is important for recording the correct place to insert the
+        hi and lo bytes later
+
+    Returns:
+    --------------
+    new_jmp: jmp_ins
+        the newly created jmp_ins
+
+    func_bytelist, program_counter
+    '''
     lo_pos_func = len(func_bytelist) + prune_count
-    hi_pos_func = lo_pos_func + 1 
+    hi_pos_func = lo_pos_func + 1
     new_jmp = jmp_ins(name, lo_pos_func, hi_pos_func, num)
     for x in range(2):
         func_bytelist.append(0x00)
@@ -215,9 +293,12 @@ def num_type(line, assignments):
     line: string
         the line we are currently iterating through
 
+    assignments: dict
+        the record of variables and values
+
     Returns
     ------------------
-    the value of the number, variable
+    the value of the number, variable, function_header
     if the num is > 0xFFFF, then return 0xEA (nop)
     if in error, return 0xEA
     '''
@@ -242,6 +323,20 @@ def num_type(line, assignments):
 
 
 def bin_return(line):
+    '''
+    If there is a binary number in the line,
+    returns it
+
+    Parameters:
+    ----------------
+    line: string
+        current line
+
+    Returns:
+    ---------------
+    the value of the number, or 0xEA (nop)
+    if not valid
+    '''
     Bin = binary.findall(line)[0]
     if int(Bin, 2) < 0xFFFF:
         return int(Bin, 2)
@@ -250,6 +345,20 @@ def bin_return(line):
 
 
 def hex_return(line):
+    '''
+    If there is a hexadecimal number in the line,
+    returns it
+
+    Parameters:
+    ----------------
+    line: string
+        current line
+
+    Returns:
+    ---------------
+    the value of the number, or 0xEA (nop)
+    if not valid
+    '''
     Hex = hexadecimal.findall(line)[0]
     if int(Hex, 16) < 0xFFFF:
         return int(Hex, 16)
@@ -258,6 +367,20 @@ def hex_return(line):
 
 
 def dec_return(line):
+    '''
+    If there is a decimal number in the line,
+    returns it
+
+    Parameters:
+    ----------------
+    line: string
+        current line
+
+    Returns:
+    ---------------
+    the value of the number, or 0xEA (nop)
+    if not valid
+    ''' 
     Dec = decimal.findall(line)[0]
     if int(Dec) < 0xFFFF:
         return int(Dec)
@@ -275,9 +398,6 @@ def command_reader(line):
     --------------
     line: string
         the line we are analyzing
-    opcodes_list: dict
-        the list of dicts organizing opcodes
-        by addressing mode
 
     Returns
     --------------
